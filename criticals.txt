@@ -50,4 +50,45 @@
 	cat .gitignore									[define a list of files, that will be ignored]
 
 	
+
+
+
+
+	[fabric basics]
+	
+	Definition: Library and command line tool for streamlining the use of SSH for application deployment or systems administration tasks.
+		
+		i.e.
+		-A tool that lets you execute arbitrary python functions via the command line,
+		-A library of subroutines to make executing shell commands over SSH easy and Pythonic
+	
+	
+
+			SSH (Secure Shell):
+			Secure Shell, or SSH is a cryptographic (encrypted) network protocol to allow remote login and other network sercives over an unsecured network.
+					
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	 
