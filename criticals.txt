@@ -1,0 +1,27 @@
+
+
+
+
+git init									to initialize a git repository 
+git status									current state of the project
+git add octocat.txt								add new/modified file to staging area
+git commit -m "Add cute octocat story"						store staged changes
+git add '*.txt'									add all .txt files to staging area
+git log										log
+git remote add origin https://github.com/try-git/try_git.git			add new/modified file to remote staging area
+git push -u origin master							"-u" saves defaults: [name of remote] = origin, [default branch] = master
+git push									acts regarding "git push -u origin master"							 
+git pull origin master								pulls down any new changes
+git diff HEAD									to look what is different from our last commit, HEAD indicates our last commit
+git add octofamily/octodog.txt							
+git diff --staged								staged changes [creation of the new file according the the command above]	
+git reset octofamily/octodog.txt						unstage file
+git checkout --octocat.txt							undo all changes after the last commit
+git branch clean_up								create a branch called clean_up
+git checkout clean_up								checkout/switch to clean_up branch
+git rm '*.txt'									remove from disk the actual files & stage the removal of the files
+git commit -m "Remove all the cats"						perform rm above, committing the changes
+git checkout master								checkout/switch to master branch
+git merge clean_up								merge clean_up to master
+git branch -d clean_up								delete a branch after merge
+git push									push everything to remote repository 
