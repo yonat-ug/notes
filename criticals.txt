@@ -66,7 +66,147 @@
 
 			SSH (Secure Shell):
 			Secure Shell, or SSH is a cryptographic (encrypted) network protocol to allow remote login and other network sercives over an unsecured network.
-					
+			SSH provides a secure channel over an unsecured network in a client-server architecture, connecting an SSH client application with an SSH server.
+			Common applications include remote command-line login and remote command line execution, but any network service can be secured with SSH.
+			The protocol specification distinguishes between two major versions SSH-1 and SSH-2.
+			The most visible application of the protocol is for access to shell accounts on Unix-like systems, but it sees some limited use on Windows as well.
+			In 2015, Microsoft announced that they would include native support for SSH in a future release.
+			SSH was designed as a replacement for Telnet and for unsecured remote shell protocols such as the Berkey rlogin, rsh, and rexec protocols.
+			Those protocols send information, notably passwords, in plaintextm rendering them susceptible to interception and disclosure using packet analysis.
+			The encription used by SSH is intented to provide confidentially and integrity of data over an unsecured network, such as the Internet, although
+			files leaked by Edward Snowden indicate that National Security Agency can sometimes decrypt SSH, allowing them to read the content of SSH sessions. 
+
+
+
+	def hello():
+		print("Hello Word!")
+
+	placed in a module file named fabfile.py in current working directory,
+	that hello function can be executed with the fab tool 
+
+	$fab hello
+	Hello world!
+
+	Note: the fab tool simply imports your fabfile and executes the function or functions you instruct it to.
+	There is nothing magic about it - anything you can do in a normal python script can be done in a fabfile.
+	
+		[Task arguments]
+		def hello(name="world"):
+			print("Hello %s!" % name)
+
+		$fab hello:name = Jeff
+			Hello Jeff!
+
+		Done.
+
+		[Local Commands]
+		As used above, fab only really saves a couple of lines of if __name__== "__main__"
+		boilerplate. Its mostly designed for use with Fabrics API, which contains functions for executing shell commands,transferring files etc
+		Let's build a hypothetical web application fabfile. This example scenario is as follows: The Web application is managed via Git on a 
+		[remote host vchost]. On localhost, we have a local clone of said Web application. When we push changes back to vchost, we want to be 
+		able to immediately install these changes on a remote host my_server in an automated fashion. We will do this by automoting the local and
+		remote Git command. Fabfiles are usually work best at the root of a project:
+
+		__init__.py
+		app.wsgi
+		fabfile.py
+		manage.py
+		my_app
+			__init__.py
+			models.py
+			templates
+				index.html
+			tests.py
+			urls.py
+			views.py
+
+		Note: We're using a Django application here, but only as an exaple, Fabric is not tied to any external codebase, save for its
+		SSH library.
+	
+		[local shell command.]
+
+
+			from fabric.api import local
+			
+			def prepare_deploy():
+				local("./manage.py test my_app")
+				local("git add -p && git commit")
+				local("git push")
+
+	
+
+
+			[Alternative implementation:]
+			
+			from fabric.api import local
+			
+			def test():
+				local("./manage.py test my_app")
+
+			def commit():
+				local("git add -p && git commit")
+
+			def push():
+				local("git push")
+
+			def prepare_deploy():
+				test()
+				commit()
+				push()
+		
+
+		[Failure]
+		Our base case work fine now, but what happens if our tests fail? Chances are we want
+		to put on the brakes and fix them before deploying.
+		Fabric checks the return value of programs called via operations and will abort if they
+		didn't exit cleanly. Let's see what happens if one of our tests encounters an error.
+			[-> We do not have to do anything Fabric detected the failure and aborted, never running the commit task]
+
+		
+		[Failure handling]
+		But what if we wanted to be flexable and give the user a choice? A setting or env var called warn_only
+		lets you turn aborts into warnings, allowing flexible error handling to occur.
+
+		Lets flip this setting on for our test function, and then inspect the result of the local call ourselves:
+		
+			from __future__ import with_statement
+			from fabric.api import local, settings, abort
+			from fabric.contrib.console import confirm
+	
+			def test():
+				with settings(warn_only=True):
+					result = local('./manage.py test my_app',capture = True)
+				if result.failed and not confirm("Tests failed. Continue anyway?"):
+					abort("Aborting at user request.")
+
+			
+			In adding this new feature we've introduced a number of new things:
+				- The __future__ import required to use with: in Python 2.5
+				- Fabric's contrib.console submodule, containing the confirm function, used for simple yes/no promts;
+				- The setting context managerm used to apply settings to a specific block of code; 
+				- Command-runnning operations like local can return objects containing info about their result (such as .failed or .rerun code)
+				- And the abort function, used to manually abort execution		
+	
+
+		[Making Connections]
+		Lets start wrapping up our fabfile by putting in the keystone: a deploy taks that is destined to run on one or more
+		remote servers, and ensures the code is up to date.
+		
+			def deploy():
+				code_dir = '/srv/django/myproject'
+				with cd(code_dir):
+					run("git pull")
+					run("touch app.wsgi")
+
+			
+			Run is similar to local but runs remotely instead of locally.
+
+			from __future__ import with_statement
+			from fabric.api import local, settings, abort, run, cd
+			from fabric.contrib.console import confirm
+
+			
+		
 
 
 
@@ -74,6 +214,30 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		
 
 
 
