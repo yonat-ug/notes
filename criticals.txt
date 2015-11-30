@@ -205,7 +205,115 @@
 			from fabric.api import local, settings, abort, run, cd
 			from fabric.contrib.console import confirm
 
-			
+		We never specified any connection info in our fabfile, so Fabric doesn't know on which host(s) the remote command should be
+		executed. When this happens, Fabric prompts us at runtime. 
+		[Connection definitions use SSH-like "host strings" (e.g. user@host:port) and will use your username as default - so in this example
+		, we just had to specify the hostname, my_server]	
+
+
+		[Remote Interactivity]
+		git pull works fine if you have already got a checkout of your souece code - but what if this is the first deploy.
+		It would be nice to handle that case too and do the initial git clone:
+
+		
+			def deploy():
+				code_dir = '/srv/django/myproject'
+				with settings(warn_only = True):
+					if run("test -d %s" % code_dir).failed:
+						run("git clone user@vcshost:/path/to/repo/.git %s" % code_dir)
+				with cd(code_dir):
+					run("git pull")
+					run("touch app.wsgi")
+
+
+	
+		As with our calls to local above, run also lets us construct clean python-level logic based on executed shell commands.
+		However, the interesting part here is the git clone call: since we 're using Gits SSH method of accessing the 
+		repository on our Git server, this means our remote run call will need to authenticate itself.
+
+		Older versions of Fabric run remote programs in [limbo], unable to be touched from the local end. This is problematic when you have
+		a serious need to enter passwords or otherwise interact with the remote program.
+
+		Fabric 1.0 and later breaks down this wall and ensures you can always talk to the other side.
+		Let's see what happens when we run our updated deploy task on a new server with no Git checkout:
+
+		[Defining Connections Beforehand]
+		Specifying connection info at runtime gets old real fast, so Fabric provides a handful of ways to do it in your fabfile
+		or on the command line.
+			[We won't cover all of them here, but we will show you the most common one: setting global host list, env.hosts]
+			[env is a global dictionary-like object driving many of Fabric's settings, and can be written to with attributes as
+			well (in fact, settings, seen above, is simply a wrapper for this.)]
+			[Thus, we can modify it at module level near the top of our fabfile like so:]
+
+				from __future__ import with_statement
+				from fabric.api import *
+				from fabric.contrib.console import confirm
+
+				env.hosts = ['my_server']
+	
+				def test():
+					do_test_stuff()
+
+			When fab loads up ourfabfile, our modification of env will execute, storing our settings change. The end result is 
+			exactly as above: our deploy task will run against the my_server server.
+
+			This is also how you can tell Fabric to run on multiple remote systems at once: because enc.hosts is a list, fab
+			iterates over it, calling the given task once for each connection.
+
+		
+		[Conclusion]
+		#the code:
+
+		from __future__ import with_statement
+		from fabric.api import *
+		from fabric.contrib.console import confirm
+		
+		env.hosts = ['my_server']
+
+		def test():
+			with setting(warn_only = True):
+				result = local('./manage.py test my_app',capture = True)
+			if result.failed and not confirm("Tests failed. Continue anyway?"):
+				abort("Aborting at user request.")
+
+		def commit():
+			local("git add -p && git commit")
+
+		def push():
+			local("git push")
+
+		def prepare_deploy():
+			test()
+			commit()
+			push()
+
+		def deploy():
+			code_dir = '/srv/django/myproject'
+			with settings(warn_only = True):
+				if run("test -d %s" % code_dir).failed:
+					run("git clone user@vcshost:/path/to/repo/.git %s" % code_dir)
+			with cd(code_dir):
+				run("git pull")
+				run("touch app.wsgi")	
+				
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
 		
 
 
