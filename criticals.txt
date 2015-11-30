@@ -298,8 +298,118 @@
 				
 
 
+		[The environment dictionary]
+		Most of the fabrics behaviour is controllable by modifying env variables, such as env.hosts.
+		Other commonly-modified env vars include
+			-user: Fabric defaults to your local username when making SSH connection, but you can use env.user
+			to override this is necessary. The execution mode documentation also has info on how to specify usernames on a per-host basis.
+			-password: Used to explicitly set your default connection or sudo password if desired. Fabric will prompt you when necessary
+			if this isnt set or doesnt appear to be valid
+			-warn_only: a boolean setting determining wheter Fabric exits when detecting errors on the remote end.
+			See Execution model for more on this behaviour.
+		
+		[The settings context manager]
+		In many situations, it is useful to only temporarily modify env vars so that a given settings change only applies to a block of code.
+		Fabric provides settings context manager, which takes any number of key/value pairs and will use them to modify env within its 
+		wrapped block.
+		There are many situations where setting warn_only (see below) is useful. To apply it to a few lines of code, use settings(warn_only=True),
+		as seen in this simplified version of the contrib exists funciton.
 
+				from fabric.api import settings,run
+			
+				def exists(path):
+					with settings(warn_only=True):
+						return run('test -e %s' % path)
 
+		See the context managers API documentation for details on settings and otherm similar tools.
+		
+		env object is simply a dictionary subclass, so your own fabfile code may store information in it as well. This is sometimes
+		useful for keeping state between multiple tasks within a single execution run.
+
+		[Other Considerations]
+		While it subclasses dict, Fabrics env has been modified so that its values may be read/written by way of attribute access, as seen
+		in some og the above material. In other words, env.host_string and env['host_string'] are functionally identical.
+
+		The fact that its a dictionarry can be useful in other ways, such as with pythons dict based string interpolation
+		
+				
+				print("Executing on %s as %s" % (env.host,env.user))
+				
+
+		[Full list of env vars]
+			Below is a list of all predefined environment variables.
+
+			
+		abort_exception		  	Overrides standard behaviour [abording by printing an error message to stderr and calling sys.exit(1)] env.abort_exception = MyException
+		abort_on_prompts		Default = False	  when true, fabric will run in a non-interactive mode, calling abort anytime it would normally promt the user for input
+		all_hosts			Default = []      full host list for currently executing command. For informational purposes only
+		always_use_pty			Default = True	  if set to False, causes run/sudo to act as if they have been called with pty = False
+		colorize_errors			colorize_errors   when set to True, error output to the terminal is colored red and warnings are colored magenta to make them easier to see
+		combine_stderr                  Default = True    causes the ssh layer to merge a remote programs stdout and stderr streams to avoid becoming meshed together when printed
+		command				Default = None	  set by fab to the currently executing command name for informational purposes only
+		command_prefixes		Default = []	  Modified by prefix and, prepended to commands executed by run/sudo
+		command_timeout			Default = None	  Remote command timeout, in seconds
+		connection_attempts		Default = 1	  Number of times fabric will attempt to connect when connecting to a new server. 
+		cwd				Default = ''	  Current working directory. Used to keep state for the cd context manager.
+		dedupe_hosts			Default = True	  Deduplicate marged host lists so any given host string is only represented once
+		disable_known_hosts		Default = False	  If true, ssh layer will skip loading the user's known-hosts file. Useful for avoiding exceptions in situations
+		eagerly_disconnect		Default = False	  If true, causes fab to close connections after each individual task execution, instead of at the end of the run
+		effective_roles			Default = []	  set by fab to the roles liset of the currently executing command. For informational purposes only.
+		exclude_hosts			Default = []	  specifies a list of host strings to be skipped over during fab execution. Typically set via --exclude-host/-x
+		fabfile				Default = fabfile.py   fab searches this when loading fabfiles
+		gateway				Default = None	  enables ssh-driven gatewaying through the indicated host
+		host_string			Default = None	  defines the current user/host/port which fabric will connect to when executing run, put and so forth
+		forward_agent			Default = False   if true, enables forwarding of your local ssh agent to the remote end
+		host				Default = None    set to the hostname part of env.host_string by fab. For informational purposes only.
+		hosts				Default = []	  the global host list used when composing per-task host lists.
+		keepalive			Default = 0	  an integer specifying an ssh keepalive interval to use, basically maps to the ssh config option ServerAliveInterval.
+		key				Default = None    A string or file like object, containing an ssh key, used during connection authentification
+		key_filename			Default = None	  may be string or list of strings, referencing file paths to ssh key files to try when connecting.
+		linewise			Default = False	  forces buffering by line instead of by character/byte, typically when running in parallel mode
+		local_user			read-only value containing the loval system username. This is the same value as users initial value.
+		no_agent			Default = False	  if true, ssh layer wont seet out runnung ssh agents when using key-based authentication
+		no_keys				Default = False   if true, will tell the ssh layer not to load any private key files from ones home $HOME/.ssh folder
+		parallel			Default = False   when true, forces all tasks to run in parallel. Implies env.linewise.
+		password			Default = None	  The default password used by ssh layer when connecting to remote hosts and/or when answering sudo promts
+		passwords			Default = {}	  The dictionary largely used by the ssh layer when connecting to remote hosts when answering sudo promts	
+		path				Default = ''	  used to set $PATH shell environment variable when executing commands in run/sudo/local. It is recommended to use the path								     context manager for managing this value instead of setting it directly.
+		pool_size			Default = 0	  		Sets the number of concurrent processes to use when executing tasks in parrallel [Parallel execution]
+		prompts				Default = {}	  		The prompts dictionary allows users to control interactive prompts. 
+										If a key in the dictionary is found in a commands
+								  		standard output stream, fabric will automatically answer with the corresponding dictionary value.
+		port				Default = None	  		set to port part of env.host_string by fab when iterating over a host list. 
+										May also be used to specify a default port.
+		
+		real_fabfile			Default = None	  		Set by fab with the path to the fabfile it loaded up, if it got that far. For informational purposes only.
+								  		[fab options and arguments]	
+		remote_interrupt		Default = None	  		Controls whether Ctrl+C triggers an interrupt remotely or is captured locally, as follows
+								  		- None (the default): only open_shell will exhibit remote interrupt behaviour, 
+										and run/sudo will capture interrupts 
+								  		- False: even open_shell captures locally
+								  		- True: all functions will send the interrupt to the remote end.
+		rcfile				Default = $HOME/.fabricrc 	path when loading Fabrics local setting file
+		reject_unknown_hosts	        Default = False	  		If True, ssh layer will raise an exception when connecting to hosts not listed in the users known host file
+		system_known_hosts		Default = None	  		If set, should be the path to a known_hosts file. 
+										the ssh layer will read this file before reading the users known host 
+		roledefs			Default = {}	  		Dictionary defining role name to host list mappings 
+		roles				Default = []	  		the global role list when composing per task host lists.
+		shell				Default = /bin/bash -l -c  	Value used as shell wrapper when executing commands with e.g. run. 
+										Must be able to exist in the form <env.shell> "<command goes here>"
+										[FAQ on bash as default shell, exception model]	
+		skip_bad_hosts			Default = False		If True, causes fab to skip over hosts it cant connect to
+		skip_unknown_tasks		Default = False		If True, causes fab to skip over tasks not found, without aborting
+		ssh_config_path			Default = $HOME/.ssh/config 	Allows specification of an alternative ssh configuration file path
+		ok_ret_codes		   	Default = [0] 			Return codes in this list are used to determine wheter calls to run/sudo/sudo are considered successful
+		sudo_prefix			Default = "sudo -S -p '%(sudo_prompt)s' " % env
+		sudo_prompt			Default = "sudo password:"
+		sudo_user			Default =  None 		Used as a fallback value for sudo s user argument if none is given. Useful in combination with settings.
+		tasks				Default = []			set by fab, full tasks list to be executed for the currently executing command.
+		timeout				Default = 10			Network connection timeout, in seconds
+		use_shell			Default = True			Global setting which acts like the shell argument to run/sudo: if it is set to False operations 
+		use_ssh_config			Default = False			Set to True to cause Fabric to load your local ssh config file.
+		user				Default = users local username
+		version				Default = current fabric version string
+		warn_only			Default = False 		Specifies whether or not to warn, instead of abort, when run/sudo/local encounter error conditions
 
 
 
