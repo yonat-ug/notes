@@ -416,6 +416,212 @@
 
 
 
+[Fabfile discovery]
+	The fabfile discovery algorithm searches in the invoking user’s current working directory or any parent directories. 
+
+[Operations]
+	
+fabric.operations.get(*args, **kwargs)					Download one or more files from a remote host.
+fabric.operations.local(command, capture=False, shell=None)		Run a command on the local system.
+fabric.operations.open_shell(*args, **kwargs)				Invoke a fully interactive shell on the remote end.
+fabric.operations.prompt(text, key=None, default='', validate=None)	Prompt user with text and return the input 
+fabric.operations.put(*args, **kwargs)					Upload one or more files to a remote host.
+fabric.operations.reboot(*args, **kwargs)				Reboot the remote system.
+fabric.operations.require(*keys, **kwargs)				Check for given keys in the shared environment dict 
+fabric.operations.run(*args, **kwargs)					Run a shell command on a remote host.
+fabric.operations.sudo(*args, **kwargs)					Run a shell command on a remote host, superuser 
+
+
+
+		# Simplest form:
+		environment = prompt('Please specify target environment: ')
+
+		# With default, and storing as env.dish:
+		prompt('Specify favorite dish: ', 'dish', default='spam & eggs')
+
+		# With validation, i.e. requiring integer input:
+		prompt('Please specify process nice level: ', key='nice', validate=int)
+
+		# With validation against a regular expression:
+		release = prompt('Please supply a release name', validate=r'^\w+-\d+(\.\d+)?$')
+
+		# Prompt regardless of the global abort-on-prompts setting:
+		with settings(abort_on_prompts=False):
+    			prompt('I seriously need an answer on this! ')
+
+
+
+		with cd('/tmp'):
+    			put('/path/to/local/test.txt', 'files')
+
+
+
+		put('bin/project.zip', '/tmp/project.zip')
+		put('*.py', 'cgi-bin/')
+		put('index.html', 'index.html', mode=0755)
+
+
+
+		run("ls /var/www/")
+		run("ls /home/myuser", shell=False)
+		output = run('ls /var/www/site1')
+		run("take_a_long_time", timeout=5)
+
+
+
+		sudo("~/install_script.py")
+		sudo("mkdir /var/www/new_docroot", user="www-data")
+		sudo("ls /home/jdoe", user=1001)
+		result = sudo("ls /tmp/")
+		with settings(sudo_user='mysql'):
+    			sudo("whoami")
+
+
+
+
+[Context Managers]
+	
+fabric.context_managers.cd(path)			Context manager that keeps directory state when calling remote operations.
+fabric.context_managers.char_buffered(*args, **kwds)   	Force local terminal pipe be character, not line, buffered.
+fabric.context_managers.hide(*args, **kwds)  		Context manager for setting the given output groups to False.
+fabric.context_managers.lcd(path)  			Context manager for updating local current working directory.
+fabric.context_managers.path(path, behavior='append')  	Append the given path to the PATH used to execute any wrapped commands.
+fabric.context_managers.prefix(command)  		Prefix all wrapped run/sudo commands with given command plus &&.
+fabric.context_managers.quiet()  			Alias to settings(hide('everything'), warn_only=True)
+fabric.context_managers.remote_tunnel(*args, **kwds)  	Create a tunnel forwarding a locally-visible port to the remote target.
+fabric.context_managers.settings(*args, **kwargs)  	Nest context managers and/or override env variables.
+fabric.context_managers.shell_env(**kw)  		Set shell environment variables for wrapped commands.
+fabric.context_managers.show(*args, **kwds)  		Context manager for setting the given output groups to True
+fabric.context_managers.warn_only()  			Alias to settings(warn_only=True)
+
+	with cd('/path/to/app'):
+    		with prefix('workon myvenv'):
+        		run('./manage.py syncdb')
+        		run('./manage.py loaddata myfixture')
+
+
+
+	with cd('/path/to/app'), prefix('workon myvenv'):
+    		run('./manage.py syncdb')
+    		run('./manage.py loaddata myfixture')
+
+
+	run('cd /var/www')
+		run('ls')
+
+
+	with cd('/var/www'):
+    		run('ls') # cd /var/www && ls
+    		with cd('website1'):
+        		run('ls') # cd /var/www/website1 && ls
+
+
+	def my_task():
+    		with hide('running', 'stdout', 'stderr'):
+        	run('ls /var/www')
+
+
+	with prefix('workon myvenv'):
+    		run('./manage.py syncdb')
+
+
+	with cd('/path/to/app'):
+    		with prefix('workon myvenv'):
+        		run('./manage.py syncdb')
+        		run('./manage.py loaddata myfixture')
+
+
+
+	with prefix('workon myenv'):
+    		run('ls')
+    	with prefix('source /some/script'):
+        	run('touch a_file')
+
+
+
+	with quiet():
+    		have_build_dir = run("test -e /tmp/build").succeeded
+
+
+	# Map localhost:6379 on the server to localhost:6379 on the client,
+	# so that the remote 'redis-cli' program ends up speaking to the local
+	# redis-server.
+	with remote_tunnel(6379):
+    		run("redis-cli -i")
+
+
+
+	def my_task():
+    	with settings(
+        	hide('warnings', 'running', 'stdout', 'stderr'),
+        	warn_only=True
+    	):
+        
+		if run('ls /etc/lsb-release'):
+            		return 'Ubuntu'
+        	elif run('ls /etc/redhat-release'):
+            		return 'RedHat'
+
+
+	# Before the block, env.parallel defaults to False, host_string to None
+	with settings(parallel=True, host_string='myhost'):
+    		# env.parallel is True
+    		# env.host_string is 'myhost'
+    		env.host_string = 'otherhost'
+    		# env.host_string is now 'otherhost'
+	# Outside the block:
+	# * env.parallel is False again
+	# * env.host_string is None again
+
+
+
+	# Before the block, env.parallel defaults to False, host_string to None
+	with settings(parallel=True, host_string='myhost', clean_revert=True):
+    		# env.parallel is True
+    		# env.host_string is 'myhost'
+    		env.host_string = 'otherhost'
+    		# env.host_string is now 'otherhost'
+	# Outside the block:
+	# * env.parallel is False again
+	# * env.host_string remains 'otherhost'
+
+	def my_task():
+    		with show('debug'):
+        	run('ls /var/www')
+
+
+
+[Decorators]
+
+fabric.decorators.hosts(*host_list)  				Decorator defining which host or hosts to execute the wrapped function on.
+fabric.decorators.parallel(pool_size=None)			Forces the wrapped function to run in parallel, instead of sequentially.
+fabric.decorators.roles(*role_list)  				Decorator defining a list of role names, used to look up host lists.
+fabric.decorators.runs_once(func)   				Decorator preventing wrapped function from running more than once.
+fabric.decorators.serial(func)  				Forces the wrapped function to always run sequentially, never in parallel.
+fabric.decorators.task(*args, **kwargs)  			Decorator declaring the wrapped function to be a new-style task.
+fabric.decorators.with_settings(*arg_settings, **kw_settings)  	Decorator equivalent of fabric.context_managers.settings
+
+
+@hosts('user1@host1', 'host2', 'user2@host3')
+def my_func():
+    pass
+
+
+
+
+env.roledefs.update({
+    'webserver': ['www1', 'www2'],
+    'dbserver': ['db1']
+})
+
+@roles('webserver', 'dbserver')
+def my_func():
+    pass
+
+
+@with_settings(warn_only=True)
+def foo():
+    ...
 
 
 
